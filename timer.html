@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Immersive Countdown</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #fillEffect {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 0%;
+      background: linear-gradient(to top, #0f1c47, #4b588f);
+      transition: height linear;
+      z-index: 0;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: float 10s ease-in-out infinite, pulse 4s ease-in-out infinite;
+      mix-blend-mode: screen;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) scale(0.8) rotate(0deg);
+        opacity: 0;
+      }
+      50% {
+        opacity: 1;
+        transform: translateY(50vh) scale(1) rotate(180deg);
+      }
+      100% {
+        transform: translateY(-10vh) scale(1.5) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    #uiContainer {
+      position: relative;
+      z-index: 10;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 2rem;
+      border-radius: 1rem;
+      max-width: 36rem;
+      width: 100%;
+    }
+
+    .sparkle {
+      position: fixed;
+      top: 40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 80px;
+      background: radial-gradient(circle, #fde68a 30%, transparent 70%);
+      border-radius: 50%;
+      opacity: 0;
+      animation: sparkleAnim 1s ease-out forwards;
+    }
+
+    @keyframes sparkleAnim {
+      0% { opacity: 1; transform: translateX(-50%) scale(0.5); }
+      100% { opacity: 0; transform: translateX(-50%) scale(2); }
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col justify-center items-center min-h-screen">
+  <div id="fillEffect"></div>
+  <div id="particles"></div>
+
+  <div id="uiContainer" class="text-center">
+    <h1 class="text-6xl font-bold mb-4">Activity Timer</h1>
+    <p class="mb-2 text-gray-300 text-4xl">Let's reconvene in</p>
+    <div id="timerDisplay" class="text-7xl font-mono text-white mb-6">00:00</div>
+
+    <div class="flex justify-center gap-4 mb-4">
+      <button onclick="startTimer(5)" class="bg-yellow-500 text-black px-4 py-2 rounded hover:bg-yellow-400">5 min</button>
+      <button onclick="startTimer(10)" class="bg-yellow-500 text-black px-4 py-2 rounded hover:bg-yellow-400">10 min</button>
+      <button onclick="startTimer(15)" class="bg-yellow-500 text-black px-4 py-2 rounded hover:bg-yellow-400">15 min</button>
+    </div>
+
+    <div class="flex justify-center gap-2 mb-6">
+      <input type="number" id="customMinutes" placeholder="Custom min" class="border px-3 py-2 rounded w-24 text-black text-center" min="1">
+      <button onclick="startCustomTimer()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Start</button>
+    </div>
+
+    <button onclick="resetTimer()" class="text-sm text-red-400 hover:underline">Reset</button>
+    <button onclick="toggleFullscreen()" class="ml-4 text-sm text-blue-400 hover:underline">Fullscreen</button>
+  </div>
+
+  <footer class="text-center text-gray-400 text-sm pb-4 mt-8">2025 EndlessNewbie</footer>
+
+  <audio id="dingSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
+  <div id="sparkleEffect" class="sparkle hidden"></div>
+
+  <script>
+    let countdown;
+
+    function startTimer(minutes) {
+      clearInterval(countdown);
+      document.getElementById('sparkleEffect').classList.add('hidden');
+
+      const totalSeconds = minutes * 60;
+      const fill = document.getElementById('fillEffect');
+      fill.style.transitionDuration = `${totalSeconds}s`;
+      fill.style.height = '100%';
+
+      const now = Date.now();
+      const then = now + totalSeconds * 1000;
+
+      countdown = setInterval(() => {
+        const secondsLeft = Math.round((then - Date.now()) / 1000);
+        if (secondsLeft <= 0) {
+          clearInterval(countdown);
+          document.getElementById('timerDisplay').textContent = "00:00";
+          playSparkle();
+          return;
+        }
+        displayTimeLeft(secondsLeft);
+      }, 1000);
+    }
+
+    function displayTimeLeft(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      const display = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      document.getElementById('timerDisplay').textContent = display;
+    }
+
+    function startCustomTimer() {
+      const customMinutes = parseInt(document.getElementById('customMinutes').value);
+      if (!isNaN(customMinutes) && customMinutes > 0) {
+        startTimer(customMinutes);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(countdown);
+      document.getElementById('fillEffect').style.transitionDuration = '0s';
+      document.getElementById('fillEffect').style.height = '0%';
+      document.getElementById('sparkleEffect').classList.add('hidden');
+      document.getElementById('timerDisplay').textContent = "00:00";
+      document.getElementById('customMinutes').value = '';
+    }
+
+    function playSparkle() {
+      document.getElementById("dingSound").play();
+      const sparkle = document.getElementById("sparkleEffect");
+      sparkle.classList.remove('hidden');
+      sparkle.style.animation = 'none';
+      sparkle.offsetHeight; // reflow
+      sparkle.style.animation = null;
+    }
+
+    function toggleFullscreen() {
+      const elem = document.documentElement;
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch(err => console.log(err));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    const particleContainer = document.getElementById('particles');
+    const colors = ['255,255,255', '255,204,204', '204,255,255', '204,204,255', '255,255,204'];
+    for (let i = 0; i < 40; i++) {
+      const particle = document.createElement('div');
+      particle.classList.add('particle');
+      const size = Math.random() * 20 + 10;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const alpha = Math.random() * 0.5 + 0.2;
+      particle.style.width = `${size}px`;
+      particle.style.height = `${size}px`;
+      particle.style.left = `${Math.random() * 100}%`;
+      particle.style.animationDuration = `${Math.random() * 8 + 6}s`;
+      particle.style.backgroundColor = `rgba(${color}, ${alpha})`;
+      particleContainer.appendChild(particle);
+    }
+  </script>
+</body>
+</html>
